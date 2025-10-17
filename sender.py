@@ -63,7 +63,17 @@ def build_message(entry, when_str: str) -> str:
         parts.append(link)
     return "\n".join(parts)
 
+def is_business_hours() -> bool:
+    """Verifica se está no horário comercial (09-19h SP)"""
+    now_sp = datetime.now(BR_TZ)
+    return 9 <= now_sp.hour < 19
+
 async def run_once():
+    """Executa uma vez o processamento de feeds"""
+    if not is_business_hours():
+        print("Fora do horário comercial (09-19h SP) — nada a processar.")
+        return
+    
     s = get_settings()
     store = get_store()
     subscribers = store.list_subscribers()
@@ -76,6 +86,7 @@ async def run_once():
 
     try:
         for feed_url in feeds:
+            print(f"Processando feed: {feed_url}")
             d = feedparser.parse(feed_url)
             for e in d.entries[: s.MAX_ITEMS_PER_FEED]:
                 item_id = getattr(e, "id", None) or getattr(e, "guid", None) or getattr(e, "link", None) or e.get("title", "")
@@ -92,10 +103,26 @@ async def run_once():
                 for chat_id in subscribers:
                     try:
                         await bot.send_message(chat_id, msg, disable_web_page_preview=False)
+                        print(f"✅ Enviado para {chat_id}")
                     except Exception as ex:
-                        print(f"Falha ao enviar para {chat_id}: {ex}")
+                        print(f"❌ Falha ao enviar para {chat_id}: {ex}")
     finally:
         await bot.session.close()
+
+async def run_cron():
+    """Executa o cron de 20 em 20 minutos durante horário comercial"""
+    print("🕒 Iniciando cron do sender (20 em 20 min, 09-19h SP)")
+    
+    while True:
+        try:
+            print(f"⏰ Executando cron em {datetime.now(BR_TZ)}")
+            await run_once()
+        except Exception as e:
+            print(f"❌ Erro no cron: {e}")
+        
+        # Aguarda 20 minutos
+        print("⏳ Aguardando 20 minutos...")
+        await asyncio.sleep(20 * 60)  # 20 minutos
 
 if __name__ == "__main__":
     asyncio.run(run_once())

@@ -35,10 +35,10 @@ A Telegram bot that monitors BACEN (Brazilian Central Bank) RSS feeds and sends 
    MAX_ITEMS_PER_FEED=50
    ```
 
-3. **Deploy:**
-   - Railway will automatically detect the Python project
-   - It will install dependencies from `requirements.txt`
-   - The bot will start using `main.py` as the entry point
+3. **Deploy Services:**
+   Railway will automatically create two services:
+   - **bacen-reply-bot**: Handles user messages (`python main.py`)
+   - **bacen-cron**: Processes RSS feeds every 20 minutes (`python cron.py`)
 
 ### Environment Variables
 
@@ -51,13 +51,21 @@ A Telegram bot that monitors BACEN (Brazilian Central Bank) RSS feeds and sends 
 
 ### How It Works
 
-1. **Reply Bot (`reply_bot.py`)**: Handles user interactions
+**Fluxo Final:**
+1. Usuário manda "oi" → entra na lista (opt-in)
+2. A cada execução do cron (de 20 em 20 min, 09–19h):
+   - Lemos o feed 2025
+   - Para cada item inédito: montamos um resumo curto com data/hora de SP e enviamos pra todos os inscritos
+
+**Serviços:**
+
+1. **Reply Bot (`main.py`)**: Handles user interactions
    - `/start` - Welcome message
    - `oi` - Subscribe to notifications
    - `/stop` - Unsubscribe from notifications
 
-2. **Sender (`sender.py`)**: Processes RSS feeds
-   - Runs every 30 minutes
+2. **Cron Service (`cron.py`)**: Processes RSS feeds
+   - Runs every 20 minutes during business hours (09-19h SP)
    - Fetches new items from configured RSS feeds
    - Sends notifications to all subscribers
    - Prevents duplicate notifications
@@ -110,13 +118,14 @@ A Telegram bot that monitors BACEN (Brazilian Central Bank) RSS feeds and sends 
 
 ```
 bacen_bot/
-├── main.py              # Main entry point for Railway
+├── main.py              # Reply bot service entry point
+├── cron.py              # Cron service entry point
 ├── reply_bot.py         # Telegram bot handlers
 ├── sender.py            # RSS feed processor
 ├── storage.py           # Database operations
 ├── test_db.py           # Database connection test
 ├── requirements.txt     # Python dependencies
-├── railway.json         # Railway configuration
+├── railway.json         # Railway configuration (Service + Cron)
 ├── Procfile            # Process definition
 └── README.md           # This file
 ```

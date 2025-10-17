@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Main entry point for the BACEN Bot reply service on Railway
-Runs only the reply bot for handling user messages
+Cron service for BACEN Bot RSS processing
+Runs every 20 minutes during business hours (09-19h SP)
 """
 import asyncio
 import os
@@ -13,10 +13,10 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Import bot modules
-from reply_bot import main as reply_bot_main
+# Import sender module
+from sender import run_cron
 
-class BACENReplyBot:
+class BACENCronService:
     def __init__(self):
         self.running = True
         
@@ -26,8 +26,8 @@ class BACENReplyBot:
         self.running = False
         
     async def start(self):
-        """Start the reply bot service"""
-        print("🚀 Starting BACEN Reply Bot on Railway...")
+        """Start the cron service"""
+        print("🚀 Starting BACEN Cron Service on Railway...")
         print(f"📅 Started at: {datetime.now()}")
         
         # Set up signal handlers
@@ -35,22 +35,22 @@ class BACENReplyBot:
         signal.signal(signal.SIGTERM, self.signal_handler)
         
         try:
-            print("🤖 Starting reply bot...")
-            await reply_bot_main()
+            print("🕒 Starting RSS cron (20 em 20 min, 09-19h SP)...")
+            await run_cron()
         except KeyboardInterrupt:
             print("\n🛑 Keyboard interrupt received")
         except Exception as e:
             print(f"❌ Unexpected error: {e}")
             return False
         finally:
-            print("🏁 BACEN Reply Bot shutdown complete")
+            print("🏁 BACEN Cron Service shutdown complete")
             
         return True
 
 async def main():
     """Main entry point"""
     # Validate required environment variables
-    required_vars = ["DATABASE_URL", "TELEGRAM_TOKEN"]
+    required_vars = ["DATABASE_URL", "TELEGRAM_TOKEN", "RSS_FEEDS"]
     missing_vars = [var for var in required_vars if not os.getenv(var)]
     
     if missing_vars:
@@ -58,9 +58,9 @@ async def main():
         print("Please set these variables in your Railway project settings")
         sys.exit(1)
     
-    # Start the reply bot
-    reply_bot = BACENReplyBot()
-    success = await reply_bot.start()
+    # Start the cron service
+    cron_service = BACENCronService()
+    success = await cron_service.start()
     
     if not success:
         sys.exit(1)
