@@ -179,6 +179,7 @@ def format_multiple_normativos_message(normativos: List[BACENNormativo], periodo
         message += f"{i}. <b>{normativo.title}</b>\n"
         message += f"   🏷️ Tema: {normativo.tema}\n"
         message += f"   🕒 {data_str}\n"
+        message += f"   📝 {normativo.mini_resumo[:100]}{'...' if len(normativo.mini_resumo) > 100 else ''}\n"
         message += f"   🔗 {normativo.link}\n\n"
     
     if len(normativos) > 10:
