@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.filters import CommandStart, Command
+from aiogram.client.default import DefaultBotProperties
 from pydantic import BaseModel, Field
 from storage import get_store
 
@@ -17,7 +18,7 @@ def get_settings() -> Settings:
     return Settings(TELEGRAM_TOKEN=os.environ["TELEGRAM_TOKEN"])
 
 s = get_settings()
-bot = Bot(token=s.TELEGRAM_TOKEN, parse_mode=ParseMode.HTML)
+bot = Bot(token=s.TELEGRAM_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher()
 store = get_store()
 

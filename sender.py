@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 from aiogram import Bot
 from aiogram.enums.parse_mode import ParseMode
+from aiogram.client.default import DefaultBotProperties
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from bs4 import BeautifulSoup
@@ -82,7 +83,7 @@ async def run_once():
         return
 
     feeds = [u.strip() for u in s.RSS_FEEDS.split(",") if u.strip()]
-    bot = Bot(token=s.TELEGRAM_TOKEN, parse_mode=ParseMode.HTML)
+    bot = Bot(token=s.TELEGRAM_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 
     try:
         for feed_url in feeds:
