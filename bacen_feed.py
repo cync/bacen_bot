@@ -4,11 +4,19 @@ Módulo para buscar normativos do BACEN por período
 """
 import feedparser
 from datetime import datetime, timezone, timedelta
-from zoneinfo import ZoneInfo
 from typing import List, Dict, Optional
 import re
 
-BR_TZ = ZoneInfo("America/Sao_Paulo")
+# Compatibilidade com Windows - usar pytz se disponível, senão usar UTC
+try:
+    import pytz
+    BR_TZ = pytz.timezone('America/Sao_Paulo')
+    HAS_TZ = True
+except ImportError:
+    # Fallback para UTC se pytz não estiver disponível
+    BR_TZ = timezone.utc
+    HAS_TZ = False
+    print("⚠️ pytz não disponível, usando UTC como fallback")
 
 class BACENNormativo:
     def __init__(self, title: str, link: str, published: datetime, summary: str = ""):
@@ -17,9 +25,11 @@ class BACENNormativo:
         self.published = published
         self.summary = summary
 
-def get_bacen_feed_url() -> str:
+def get_bacen_feed_url(ano: int = None) -> str:
     """Retorna a URL do feed RSS do BACEN para normativos"""
-    return "https://www.bcb.gov.br/api/feed/v1/normativos"
+    if ano is None:
+        ano = datetime.now().year
+    return f"https://www.bcb.gov.br/api/feed/app/normativos/normativos?ano={ano}"
 
 def parse_bacen_feed() -> List[BACENNormativo]:
     """Parseia o feed RSS do BACEN e retorna lista de normativos"""
@@ -38,8 +48,12 @@ def parse_bacen_feed() -> List[BACENNormativo]:
             else:
                 published_dt = datetime.now(timezone.utc)
             
-            # Converte para horário de SP
-            published_dt = published_dt.astimezone(BR_TZ)
+            # Converte para horário de SP se disponível
+            if HAS_TZ:
+                published_dt = published_dt.astimezone(BR_TZ)
+            else:
+                # Mantém UTC se pytz não estiver disponível
+                pass
             
             normativo = BACENNormativo(
                 title=entry.get('title', 'Normativo sem título'),
@@ -65,31 +79,55 @@ def get_ultimo_normativo() -> Optional[BACENNormativo]:
 
 def get_normativos_hoje() -> List[BACENNormativo]:
     """Retorna todos os normativos publicados hoje"""
-    hoje = datetime.now(BR_TZ).date()
+    if HAS_TZ:
+        hoje = datetime.now(BR_TZ).date()
+    else:
+        hoje = datetime.now(timezone.utc).date()
+    
     normativos = parse_bacen_feed()
     
     normativos_hoje = []
     for normativo in normativos:
-        if normativo.published.date() == hoje:
+        # Converte a data do normativo para o mesmo timezone para comparação
+        if HAS_TZ:
+            normativo_date = normativo.published.astimezone(BR_TZ).date()
+        else:
+            normativo_date = normativo.published.date()
+        
+        if normativo_date == hoje:
             normativos_hoje.append(normativo)
     
     return normativos_hoje
 
 def get_normativos_ontem() -> List[BACENNormativo]:
     """Retorna todos os normativos publicados ontem"""
-    ontem = (datetime.now(BR_TZ) - timedelta(days=1)).date()
+    if HAS_TZ:
+        ontem = (datetime.now(BR_TZ) - timedelta(days=1)).date()
+    else:
+        ontem = (datetime.now(timezone.utc) - timedelta(days=1)).date()
+    
     normativos = parse_bacen_feed()
     
     normativos_ontem = []
     for normativo in normativos:
-        if normativo.published.date() == ontem:
+        # Converte a data do normativo para o mesmo timezone para comparação
+        if HAS_TZ:
+            normativo_date = normativo.published.astimezone(BR_TZ).date()
+        else:
+            normativo_date = normativo.published.date()
+        
+        if normativo_date == ontem:
             normativos_ontem.append(normativo)
     
     return normativos_ontem
 
 def get_normativos_semanal() -> List[BACENNormativo]:
     """Retorna todos os normativos publicados esta semana"""
-    hoje = datetime.now(BR_TZ)
+    if HAS_TZ:
+        hoje = datetime.now(BR_TZ)
+    else:
+        hoje = datetime.now(timezone.utc)
+    
     inicio_semana = hoje - timedelta(days=hoje.weekday())  # Segunda-feira
     inicio_semana = inicio_semana.replace(hour=0, minute=0, second=0, microsecond=0)
     
@@ -97,7 +135,13 @@ def get_normativos_semanal() -> List[BACENNormativo]:
     
     normativos_semana = []
     for normativo in normativos:
-        if normativo.published >= inicio_semana:
+        # Converte a data do normativo para o mesmo timezone para comparação
+        if HAS_TZ:
+            normativo_dt = normativo.published.astimezone(BR_TZ)
+        else:
+            normativo_dt = normativo.published
+        
+        if normativo_dt >= inicio_semana:
             normativos_semana.append(normativo)
     
     return normativos_semana
