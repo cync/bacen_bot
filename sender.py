@@ -1,6 +1,7 @@
 import os
 import asyncio
 import feedparser
+from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 from aiogram import Bot
 from aiogram.enums.parse_mode import ParseMode
@@ -10,6 +11,9 @@ from bs4 import BeautifulSoup
 import re
 
 from storage import get_store
+
+# Load environment variables from .env file
+load_dotenv()
 
 BR_TZ = ZoneInfo("America/Sao_Paulo")
 

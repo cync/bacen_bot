@@ -1,10 +1,14 @@
 import asyncio
 import os
+from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.filters import CommandStart, Command
 from pydantic import BaseModel, Field
 from storage import get_store
+
+# Load environment variables from .env file
+load_dotenv()
 
 class Settings(BaseModel):
     TELEGRAM_TOKEN: str = Field(...)
