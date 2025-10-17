@@ -18,12 +18,20 @@ except ImportError:
     HAS_TZ = False
     print("⚠️ pytz não disponível, usando UTC como fallback")
 
+# Importa o analisador de normativos
+from normativo_analyzer import analisar_normativo
+
 class BACENNormativo:
     def __init__(self, title: str, link: str, published: datetime, summary: str = ""):
         self.title = title
         self.link = link
         self.published = published
         self.summary = summary
+        
+        # Analisa o normativo para extrair tema e mini-resumo
+        analise = analisar_normativo(title, summary)
+        self.tema = analise['tema']
+        self.mini_resumo = analise['mini_resumo']
 
 def get_bacen_feed_url(ano: int = None) -> str:
     """Retorna a URL do feed RSS do BACEN para normativos"""
@@ -151,10 +159,10 @@ def format_normativo_message(normativo: BACENNormativo) -> str:
     data_str = normativo.published.strftime("%d/%m/%Y %H:%M")
     
     message = f"📄 <b>{normativo.title}</b>\n"
-    message += f"🕒 {data_str}\n"
-    if normativo.summary:
-        message += f"\n{normativo.summary}\n"
-    message += f"\n🔗 {normativo.link}"
+    message += f"🏷️ <b>Tema:</b> {normativo.tema}\n"
+    message += f"🕒 {data_str}\n\n"
+    message += f"📝 <b>Resumo:</b>\n{normativo.mini_resumo}\n\n"
+    message += f"🔗 {normativo.link}"
     
     return message
 
@@ -169,6 +177,7 @@ def format_multiple_normativos_message(normativos: List[BACENNormativo], periodo
     for i, normativo in enumerate(normativos[:10], 1):  # Limita a 10 para não sobrecarregar
         data_str = normativo.published.strftime("%d/%m/%Y %H:%M")
         message += f"{i}. <b>{normativo.title}</b>\n"
+        message += f"   🏷️ Tema: {normativo.tema}\n"
         message += f"   🕒 {data_str}\n"
         message += f"   🔗 {normativo.link}\n\n"
     
