@@ -7,7 +7,6 @@ from aiogram import Bot
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.client.default import DefaultBotProperties
 from datetime import datetime, timezone
-from zoneinfo import ZoneInfo
 from bs4 import BeautifulSoup
 import re
 
@@ -16,7 +15,16 @@ from storage import get_store
 # Load environment variables from .env file
 load_dotenv()
 
-BR_TZ = ZoneInfo("America/Sao_Paulo")
+# Compatibilidade com Windows - usar pytz se disponível, senão usar UTC
+try:
+    import pytz
+    BR_TZ = pytz.timezone('America/Sao_Paulo')
+    HAS_TZ = True
+except ImportError:
+    # Fallback para UTC se pytz não estiver disponível
+    BR_TZ = timezone.utc
+    HAS_TZ = False
+    print("⚠️ pytz não disponível, usando UTC como fallback")
 
 class Settings(BaseModel):
     TELEGRAM_TOKEN: str = Field(...)
@@ -39,7 +47,10 @@ def strip_html(html: str) -> str:
 
 def dt_to_br_str(dt_utc: datetime) -> str:
     # converte UTC -> São Paulo e formata
-    dt_br = dt_utc.astimezone(BR_TZ)
+    if HAS_TZ:
+        dt_br = dt_utc.astimezone(BR_TZ)
+    else:
+        dt_br = dt_utc
     return dt_br.strftime("%d/%m/%Y %H:%M %Z")
 
 def published_dt(entry) -> datetime:
@@ -66,7 +77,10 @@ def build_message(entry, when_str: str) -> str:
 
 def is_business_hours() -> bool:
     """Verifica se está no horário comercial (09-19h SP)"""
-    now_sp = datetime.now(BR_TZ)
+    if HAS_TZ:
+        now_sp = datetime.now(BR_TZ)
+    else:
+        now_sp = datetime.now(timezone.utc)
     return 9 <= now_sp.hour < 19
 
 async def run_once():
@@ -111,19 +125,23 @@ async def run_once():
         await bot.session.close()
 
 async def run_cron():
-    """Executa o cron de 20 em 20 minutos durante horário comercial"""
-    print("🕒 Iniciando cron do sender (20 em 20 min, 09-19h SP)")
+    """Executa o cron de 10 em 10 minutos durante horário comercial"""
+    print("🕒 Iniciando cron do sender (10 em 10 min, 09-19h SP)")
     
     while True:
         try:
-            print(f"⏰ Executando cron em {datetime.now(BR_TZ)}")
+            if HAS_TZ:
+                current_time = datetime.now(BR_TZ)
+            else:
+                current_time = datetime.now(timezone.utc)
+            print(f"⏰ Executando cron em {current_time}")
             await run_once()
         except Exception as e:
             print(f"❌ Erro no cron: {e}")
         
-        # Aguarda 20 minutos
-        print("⏳ Aguardando 20 minutos...")
-        await asyncio.sleep(20 * 60)  # 20 minutos
+        # Aguarda 10 minutos
+        print("⏳ Aguardando 10 minutos...")
+        await asyncio.sleep(10 * 60)  # 10 minutos
 
 if __name__ == "__main__":
     asyncio.run(run_once())

@@ -53,7 +53,7 @@ A Telegram bot that monitors BACEN (Brazilian Central Bank) RSS feeds and sends 
 
 **Fluxo Final:**
 1. Usuário manda "oi" → entra na lista (opt-in)
-2. A cada execução do cron (de 20 em 20 min, 09–19h):
+2. A cada execução do cron (de 10 em 10 min, 09–19h):
    - Lemos o feed 2025
    - Para cada item inédito: montamos um resumo curto com data/hora de SP e enviamos pra todos os inscritos
 
@@ -65,7 +65,7 @@ A Telegram bot that monitors BACEN (Brazilian Central Bank) RSS feeds and sends 
    - `/stop` - Unsubscribe from notifications
 
 2. **Cron Service (`cron.py`)**: Processes RSS feeds
-   - Runs every 20 minutes during business hours (09-19h SP)
+   - Runs every 10 minutes during business hours (09-19h SP)
    - Fetches new items from configured RSS feeds
    - Sends notifications to all subscribers
    - Prevents duplicate notifications

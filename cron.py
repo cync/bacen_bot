@@ -35,7 +35,7 @@ class BACENCronService:
         signal.signal(signal.SIGTERM, self.signal_handler)
         
         try:
-            print("🕒 Starting RSS cron (20 em 20 min, 09-19h SP)...")
+            print("🕒 Starting RSS cron (10 em 10 min, 09-19h SP)...")
             await run_cron()
         except KeyboardInterrupt:
             print("\n🛑 Keyboard interrupt received")
