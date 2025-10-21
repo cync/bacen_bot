@@ -167,22 +167,28 @@ def format_normativo_message(normativo: BACENNormativo) -> str:
     return message
 
 def format_multiple_normativos_message(normativos: List[BACENNormativo], periodo: str) -> str:
-    """Formata uma mensagem para múltiplos normativos"""
+    """Formata uma mensagem para múltiplos normativos usando o mesmo layout do 'último'"""
     if not normativos:
         return f"❌ Nenhum normativo encontrado para {periodo}."
     
     message = f"📋 <b>Normativos do BACEN - {periodo}</b>\n"
     message += f"📊 Total: {len(normativos)} normativo(s)\n\n"
     
-    for i, normativo in enumerate(normativos[:10], 1):  # Limita a 10 para não sobrecarregar
+    for i, normativo in enumerate(normativos[:5], 1):  # Limita a 5 para não sobrecarregar
         data_str = normativo.published.strftime("%d/%m/%Y %H:%M")
-        message += f"{i}. <b>{normativo.title}</b>\n"
-        message += f"   🏷️ Tema: {normativo.tema}\n"
-        message += f"   🕒 {data_str}\n"
-        message += f"   📝 {normativo.mini_resumo[:100]}{'...' if len(normativo.mini_resumo) > 100 else ''}\n"
-        message += f"   🔗 {normativo.link}\n\n"
+        
+        message += f"📄 <b>{normativo.title}</b>\n"
+        message += f"🏷️ <b>Tema:</b> {normativo.tema}\n"
+        message += f"🕒 {data_str}\n\n"
+        message += f"📝 <b>Resumo:</b>\n{normativo.mini_resumo}\n\n"
+        message += f"🔗 {normativo.link}\n\n"
+        
+        # Separador entre normativos (exceto o último)
+        if i < min(len(normativos), 5):
+            message += "─" * 30 + "\n\n"
     
-    if len(normativos) > 10:
-        message += f"... e mais {len(normativos) - 10} normativo(s)"
+    if len(normativos) > 5:
+        message += f"📄 <b>... e mais {len(normativos) - 5} normativo(s)</b>\n"
+        message += f"💡 Use o comando <b>'ultimo'</b> para ver o mais recente em detalhes"
     
     return message
