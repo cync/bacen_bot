@@ -15,8 +15,7 @@ def validate_environment():
     
     required_vars = {
         "DATABASE_URL": "PostgreSQL connection string",
-        "TELEGRAM_TOKEN": "Telegram bot token from @BotFather",
-        "RSS_FEEDS": "Comma-separated RSS feed URLs"
+        "TELEGRAM_TOKEN": "Telegram bot token from @BotFather"
     }
     
     optional_vars = {

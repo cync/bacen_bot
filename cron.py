@@ -50,7 +50,7 @@ class BACENCronService:
 async def main():
     """Main entry point"""
     # Validate required environment variables
-    required_vars = ["DATABASE_URL", "TELEGRAM_TOKEN", "RSS_FEEDS"]
+    required_vars = ["DATABASE_URL", "TELEGRAM_TOKEN"]
     missing_vars = [var for var in required_vars if not os.getenv(var)]
     
     if missing_vars:
