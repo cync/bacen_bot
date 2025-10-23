@@ -49,18 +49,29 @@ def is_business_hours() -> bool:
 
 async def run_once():
     """Executa uma vez o processamento do feed do BACEN"""
+    print(f"🕒 [{datetime.now().strftime('%H:%M:%S')}] Iniciando verificação de normativos...")
+    
     if not is_business_hours():
-        print("Fora do horário comercial (09-19h SP) — nada a processar.")
+        print("⏰ Fora do horário comercial (09-19h SP) — nada a processar.")
         return
     
     s = get_settings()
     store = get_store()
+    
+    # Verificação de saúde do banco
+    health = store.health_check()
+    if health['status'] != 'healthy':
+        print(f"❌ Problema no banco de dados: {health.get('error', 'Erro desconhecido')}")
+        return
+    
+    print(f"✅ Banco de dados saudável - {health['subscriber_count']} inscrito(s)")
+    
     subscribers = store.list_subscribers()
     if not subscribers:
-        print("Nenhum inscrito — nada a enviar.")
+        print("ℹ️ Nenhum inscrito — nada a enviar.")
         return
 
-    print("🔍 Buscando normativos do BACEN...")
+    print(f"🔍 Buscando normativos do BACEN...")
     normativos = parse_bacen_feed()
     
     if not normativos:
@@ -69,6 +80,7 @@ async def run_once():
     
     # Ordena por data de publicação (mais recente primeiro)
     normativos.sort(key=lambda x: x.published, reverse=True)
+    print(f"📊 {len(normativos)} normativos encontrados no feed")
     
     bot = Bot(token=s.TELEGRAM_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 
@@ -85,6 +97,8 @@ async def run_once():
             # Verifica se já foi enviado antes
             if not store.mark_new_and_return_is_new("bacen_feed", item_id):
                 continue  # já enviado antes
+
+            print(f"🆕 Novo normativo detectado: {normativo.title}")
 
             # Formata a mensagem usando o sistema do BACEN
             msg = format_normativo_message(normativo)
@@ -109,6 +123,7 @@ async def run_once():
             
     finally:
         await bot.session.close()
+        print(f"🏁 Verificação concluída às {datetime.now().strftime('%H:%M:%S')}")
 
 async def run_cron():
     """Executa o cron de 10 em 10 minutos durante horário comercial"""

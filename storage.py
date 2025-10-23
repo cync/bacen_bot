@@ -50,11 +50,57 @@ class PGStore:
             cur.execute("DELETE FROM subscribers WHERE chat_id=%s", (chat_id,))
         self.conn.commit()
 
-    def list_subscribers(self) -> list[int]:
+    def get_subscriber_count(self) -> int:
+        """Retorna o número total de inscritos"""
         with self.conn.cursor() as cur:
-            cur.execute("SELECT chat_id FROM subscribers")
-            rows = cur.fetchall()
-        return [r[0] for r in rows]
+            cur.execute("SELECT COUNT(*) FROM subscribers")
+            count = cur.fetchone()[0]
+        return count
+    
+    def get_subscriber_info(self, chat_id: int) -> dict | None:
+        """Retorna informações de um inscrito específico"""
+        with self.conn.cursor() as cur:
+            cur.execute(
+                "SELECT chat_id, first_name, username, joined_at FROM subscribers WHERE chat_id = %s",
+                (chat_id,)
+            )
+            row = cur.fetchone()
+            if row:
+                return {
+                    'chat_id': row[0],
+                    'first_name': row[1],
+                    'username': row[2],
+                    'joined_at': row[3]
+                }
+        return None
+    
+    def health_check(self) -> dict:
+        """Verifica a saúde do banco de dados"""
+        try:
+            with self.conn.cursor() as cur:
+                # Testa conexão
+                cur.execute("SELECT 1")
+                
+                # Conta inscritos
+                cur.execute("SELECT COUNT(*) FROM subscribers")
+                subscriber_count = cur.fetchone()[0]
+                
+                # Conta itens vistos
+                cur.execute("SELECT COUNT(*) FROM seen_items")
+                seen_items_count = cur.fetchone()[0]
+                
+                return {
+                    'status': 'healthy',
+                    'subscriber_count': subscriber_count,
+                    'seen_items_count': seen_items_count,
+                    'connection': 'ok'
+                }
+        except Exception as e:
+            return {
+                'status': 'unhealthy',
+                'error': str(e),
+                'connection': 'failed'
+            }
 
     # ============ dedupe ============
     def mark_new_and_return_is_new(self, source: str, item_id: str) -> bool:
