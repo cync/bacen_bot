@@ -42,12 +42,23 @@ async def on_stop(message: types.Message):
 @dp.message(F.text.lower() == "oi")
 async def on_oi(message: types.Message):
     user = message.from_user
-    store.upsert_subscriber(
-        chat_id=message.chat.id,
-        first_name=user.first_name,
-        username=user.username,
-    )
-    await message.answer("✅ Pronto! Você autorizou receber resumos de normativos do BACEN.\nPara sair, envie /stop.")
+    
+    # Verifica se o usuário já está inscrito
+    user_info = store.get_subscriber_info(message.chat.id)
+    
+    if user_info:
+        # Usuário já está inscrito
+        # Usa username se disponível, senão usa first_name, senão usa "usuário"
+        display_name = user.username or user.first_name or "usuário"
+        await message.answer(f"Olá @{display_name}, você já está cadastrado no Bacen_bot!")
+    else:
+        # Usuário não está inscrito, cadastra
+        store.upsert_subscriber(
+            chat_id=message.chat.id,
+            first_name=user.first_name,
+            username=user.username,
+        )
+        await message.answer("✅ Pronto! Você autorizou receber resumos de normativos do BACEN.\nPara sair, envie /stop.")
 
 @dp.message(F.text.lower() == "ultimo")
 async def on_ultimo(message: types.Message):
