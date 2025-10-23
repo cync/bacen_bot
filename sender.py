@@ -40,19 +40,34 @@ def get_settings() -> Settings:
 # Funções removidas - agora usamos o sistema integrado do bacen_feed.py
 
 def is_business_hours() -> bool:
-    """Verifica se está no horário comercial (09-19h SP)"""
+    """Verifica se está no horário comercial (08:00-19:25h SP)"""
     if HAS_TZ:
         now_sp = datetime.now(BR_TZ)
     else:
         now_sp = datetime.now(timezone.utc)
-    return 9 <= now_sp.hour < 19
+    
+    # Horário comercial: 08:00 até 19:25 (horário de SP)
+    hour = now_sp.hour
+    minute = now_sp.minute
+    
+    # 08:00 até 19:25
+    if hour < 8:
+        return False
+    elif hour == 8:
+        return True  # A partir das 08:00
+    elif hour < 19:
+        return True  # Entre 09:00 e 18:59
+    elif hour == 19:
+        return minute <= 25  # Até 19:25
+    else:
+        return False  # Após 19:25
 
 async def run_once():
     """Executa uma vez o processamento do feed do BACEN"""
     print(f"🕒 [{datetime.now().strftime('%H:%M:%S')}] Iniciando verificação de normativos...")
     
     if not is_business_hours():
-        print("⏰ Fora do horário comercial (09-19h SP) — nada a processar.")
+        print("⏰ Fora do horário comercial (08:00-19:25h SP) — nada a processar.")
         return
     
     s = get_settings()
@@ -127,7 +142,7 @@ async def run_once():
 
 async def run_cron():
     """Executa o cron de 10 em 10 minutos durante horário comercial"""
-    print("🕒 Iniciando cron do sender (10 em 10 min, 09-19h SP)")
+    print("🕒 Iniciando cron do sender (10 em 10 min, 08:00-19:25h SP)")
     
     while True:
         try:

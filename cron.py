@@ -62,7 +62,7 @@ class BACENCronService:
             # Start health check server
             await self.start_web_server()
             
-            print("🕒 Starting RSS cron (10 em 10 min, 09-19h SP)...")
+            print("🕒 Starting RSS cron (10 em 10 min, 08:00-19:25h SP)...")
             await run_cron()
         except KeyboardInterrupt:
             print("\n🛑 Keyboard interrupt received")
