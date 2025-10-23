@@ -9,6 +9,8 @@ import signal
 import sys
 from datetime import datetime
 from dotenv import load_dotenv
+from aiohttp import web
+import threading
 
 # Load environment variables
 load_dotenv()
@@ -25,6 +27,29 @@ class BACENReplyBot:
         print(f"\n🛑 Received signal {signum}, shutting down gracefully...")
         self.running = False
         
+    async def health_check_handler(self, request):
+        """Health check endpoint for Railway"""
+        return web.json_response({
+            "status": "healthy",
+            "service": "bacen-reply-bot",
+            "timestamp": datetime.now().isoformat()
+        })
+    
+    async def start_web_server(self):
+        """Start a simple web server for health checks"""
+        app = web.Application()
+        app.router.add_get('/health', self.health_check_handler)
+        app.router.add_get('/', self.health_check_handler)
+        
+        runner = web.AppRunner(app)
+        await runner.setup()
+        
+        # Use PORT environment variable or default to 8000
+        port = int(os.getenv('PORT', 8000))
+        site = web.TCPSite(runner, '0.0.0.0', port)
+        await site.start()
+        print(f"🌐 Health check server running on port {port}")
+        
     async def start(self):
         """Start the reply bot service"""
         print("🚀 Starting BACEN Reply Bot on Railway...")
@@ -35,6 +60,9 @@ class BACENReplyBot:
         signal.signal(signal.SIGTERM, self.signal_handler)
         
         try:
+            # Start health check server
+            await self.start_web_server()
+            
             print("🤖 Starting reply bot...")
             await reply_bot_main()
         except KeyboardInterrupt:
