@@ -1,4 +1,29 @@
+#!/usr/bin/env python3
+"""
+Solução definitiva para execução contínua do cron
+"""
+import os
+import sys
+import asyncio
+import signal
+import time
+from datetime import datetime, timedelta
+from dotenv import load_dotenv
+import pytz
 
+# Load environment variables
+load_dotenv()
+
+# Add current directory to path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# Configuração do fuso horário brasileiro
+BR_TZ = pytz.timezone('America/Sao_Paulo')
+
+def create_watchdog_cron():
+    """Cria versão com watchdog para garantir execução contínua"""
+    
+    watchdog_code = '''
 import os
 import sys
 import asyncio
@@ -23,7 +48,7 @@ class CronWatchdog:
         
     def signal_handler(self, signum, frame):
         """Handle shutdown signals gracefully"""
-        print(f"\n🛑 Received signal {signum}, shutting down gracefully...")
+        print(f"\\n🛑 Received signal {signum}, shutting down gracefully...")
         self.running = False
         
     async def health_check(self):
@@ -172,7 +197,173 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\n👋 Goodbye!")
+        print("\\n👋 Goodbye!")
     except Exception as e:
         print(f"💥 Fatal error: {e}")
         sys.exit(1)
+'''
+    
+    return watchdog_code
+
+def update_cron_with_watchdog():
+    """Atualiza cron.py com watchdog"""
+    print("🔄 ATUALIZANDO CRON.PY COM WATCHDOG")
+    print("=" * 50)
+    
+    watchdog_code = create_watchdog_cron()
+    
+    # Substitui todo o conteúdo do cron.py
+    with open("cron.py", 'w', encoding='utf-8') as f:
+        f.write(watchdog_code)
+    
+    print("✅ cron.py atualizado com watchdog")
+    print("📝 Características do watchdog:")
+    print("   • Monitora execução a cada 5 minutos")
+    print("   • Reinicia se idle > 15 minutos")
+    print("   • Máximo 3 erros consecutivos")
+    print("   • Logs detalhados de watchdog")
+    print("   • Tratamento robusto de sinais")
+
+def create_restart_script():
+    """Cria script de restart para Railway"""
+    restart_script = '''#!/bin/bash
+# Script de restart para Railway
+echo "🔄 Reiniciando serviço bacen-cron..."
+
+# Mata processo existente se houver
+pkill -f "python cron.py" || true
+
+# Aguarda um pouco
+sleep 5
+
+# Inicia novo processo
+echo "🚀 Iniciando novo processo..."
+python cron.py &
+
+# Aguarda um pouco para verificar se iniciou
+sleep 10
+
+# Verifica se está rodando
+if pgrep -f "python cron.py" > /dev/null; then
+    echo "✅ Serviço reiniciado com sucesso"
+else
+    echo "❌ Falha ao reiniciar serviço"
+    exit 1
+fi
+'''
+    
+    with open("restart_cron.sh", 'w', encoding='utf-8') as f:
+        f.write(restart_script)
+    
+    print("✅ Script de restart criado: restart_cron.sh")
+
+def create_health_check_enhanced():
+    """Cria health check melhorado"""
+    health_check_code = '''
+import os
+import sys
+import asyncio
+from datetime import datetime, timedelta
+from dotenv import load_dotenv
+from aiohttp import web
+import pytz
+
+# Load environment variables
+load_dotenv()
+
+# Configuração do fuso horário brasileiro
+BR_TZ = pytz.timezone('America/Sao_Paulo')
+
+class EnhancedHealthCheck:
+    def __init__(self):
+        self.start_time = datetime.now(BR_TZ)
+        self.last_check = None
+    
+    async def health_check_handler(self, request):
+        """Health check endpoint melhorado"""
+        now = datetime.now(BR_TZ)
+        uptime = (now - self.start_time).total_seconds()
+        
+        # Verifica logs de execução
+        try:
+            import json
+            if os.path.exists("cron_executions.json"):
+                with open("cron_executions.json", 'r', encoding='utf-8') as f:
+                    logs = json.load(f)
+                
+                last_log = logs[-1] if logs else None
+                if last_log:
+                    last_execution = datetime.fromisoformat(last_log['timestamp'])
+                    time_since_last = (now - last_execution).total_seconds()
+                else:
+                    time_since_last = None
+            else:
+                time_since_last = None
+        except:
+            time_since_last = None
+        
+        health_data = {
+            "status": "healthy",
+            "service": "bacen-cron",
+            "timestamp": now.isoformat(),
+            "uptime_seconds": uptime,
+            "uptime_hours": uptime / 3600,
+            "last_execution_seconds_ago": time_since_last,
+            "last_execution_minutes_ago": time_since_last / 60 if time_since_last else None
+        }
+        
+        # Determina status baseado na última execução
+        if time_since_last and time_since_last > 20 * 60:  # 20 minutos
+            health_data["status"] = "warning"
+            health_data["message"] = "No execution in last 20 minutes"
+        elif time_since_last and time_since_last > 30 * 60:  # 30 minutos
+            health_data["status"] = "unhealthy"
+            health_data["message"] = "No execution in last 30 minutes"
+        
+        return web.json_response(health_data)
+    
+    async def start_web_server(self):
+        """Start enhanced web server"""
+        app = web.Application()
+        app.router.add_get('/health', self.health_check_handler)
+        app.router.add_get('/', self.health_check_handler)
+        
+        runner = web.AppRunner(app)
+        await runner.setup()
+        
+        port = int(os.getenv('PORT', 8001))
+        site = web.TCPSite(runner, '0.0.0.0', port)
+        await site.start()
+        print(f"🌐 Enhanced health check server running on port {port}")
+
+# Adiciona health check ao cron.py
+'''
+    
+    return health_check_code
+
+def main():
+    """Função principal"""
+    print("🔧 SOLUÇÃO DEFINITIVA PARA EXECUÇÃO CONTÍNUA")
+    print("=" * 70)
+    
+    # Atualiza cron com watchdog
+    update_cron_with_watchdog()
+    
+    # Cria script de restart
+    create_restart_script()
+    
+    print(f"\n🎯 SOLUÇÃO IMPLEMENTADA!")
+    print("=" * 50)
+    print("✅ Cron com watchdog implementado")
+    print("✅ Script de restart criado")
+    print("✅ Monitoramento robusto")
+    print("✅ Restart automático")
+    
+    print(f"\n🔄 PRÓXIMOS PASSOS:")
+    print("1. Fazer commit e push")
+    print("2. Deploy no Railway")
+    print("3. Monitorar execuções")
+    print("4. Se necessário, usar restart_cron.sh")
+
+if __name__ == "__main__":
+    main()
