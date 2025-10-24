@@ -1,0 +1,2 @@
+# Python runtime configuration for Railway
+python-version: 3.11

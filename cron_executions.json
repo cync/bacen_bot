@@ -55,5 +55,40 @@
       "timestamp": "2025-10-24T14:36:02.927285-03:00",
       "business_hours": true
     }
+  },
+  {
+    "timestamp": "2025-10-24T15:18:06.656116-03:00",
+    "status": "forced_execution",
+    "details": {
+      "timestamp": "2025-10-24T15:18:06.655558-03:00",
+      "business_hours": true,
+      "reason": "manual_force"
+    }
+  },
+  {
+    "timestamp": "2025-10-24T15:18:06.677595-03:00",
+    "status": "started",
+    "details": {
+      "timestamp": "2025-10-24T15:18:06.657086-03:00",
+      "business_hours": true
+    }
+  },
+  {
+    "timestamp": "2025-10-24T16:03:20.308297-03:00",
+    "status": "forced_execution",
+    "details": {
+      "timestamp": "2025-10-24T16:03:10.818631-03:00",
+      "business_hours": true,
+      "reason": "manual_investigation",
+      "last_execution_missing": true
+    }
+  },
+  {
+    "timestamp": "2025-10-24T16:03:20.358289-03:00",
+    "status": "started",
+    "details": {
+      "timestamp": "2025-10-24T16:03:20.311870-03:00",
+      "business_hours": true
+    }
   }
 ]
