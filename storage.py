@@ -102,6 +102,13 @@ class PGStore:
                 'connection': 'failed'
             }
 
+    def list_subscribers(self) -> list[int]:
+        """Retorna lista de chat_ids dos inscritos"""
+        with self.conn.cursor() as cur:
+            cur.execute("SELECT chat_id FROM subscribers")
+            rows = cur.fetchall()
+        return [r[0] for r in rows]
+
     # ============ dedupe ============
     def mark_new_and_return_is_new(self, source: str, item_id: str) -> bool:
         with self.conn.cursor() as cur:
