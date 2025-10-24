@@ -9,6 +9,7 @@ from aiogram.client.default import DefaultBotProperties
 from datetime import datetime, timezone, timedelta
 from bs4 import BeautifulSoup
 import re
+import json
 
 from storage import get_store
 from bacen_feed import parse_bacen_feed, BACENNormativo, format_normativo_message
@@ -37,7 +38,49 @@ def get_settings() -> Settings:
         MAX_ITEMS_PER_FEED=int(os.getenv("MAX_ITEMS_PER_FEED", "50")),
     )
 
-# Funções removidas - agora usamos o sistema integrado do bacen_feed.py
+# Sistema de logs de execução
+EXECUTION_LOG_FILE = "cron_executions.json"
+
+def log_execution(status: str, details: dict = None):
+    """Registra uma execução do cron"""
+    try:
+        # Carrega logs existentes
+        if os.path.exists(EXECUTION_LOG_FILE):
+            with open(EXECUTION_LOG_FILE, 'r', encoding='utf-8') as f:
+                logs = json.load(f)
+        else:
+            logs = []
+        
+        # Adiciona novo log
+        log_entry = {
+            "timestamp": datetime.now().isoformat(),
+            "status": status,
+            "details": details or {}
+        }
+        
+        logs.append(log_entry)
+        
+        # Mantém apenas os últimos 100 logs
+        if len(logs) > 100:
+            logs = logs[-100:]
+        
+        # Salva logs
+        with open(EXECUTION_LOG_FILE, 'w', encoding='utf-8') as f:
+            json.dump(logs, f, ensure_ascii=False, indent=2)
+            
+    except Exception as e:
+        print(f"Erro ao salvar log: {e}")
+
+def get_execution_logs():
+    """Retorna os logs de execução"""
+    try:
+        if os.path.exists(EXECUTION_LOG_FILE):
+            with open(EXECUTION_LOG_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        return []
+    except Exception as e:
+        print(f"Erro ao carregar logs: {e}")
+        return []
 
 def is_business_hours() -> bool:
     """Verifica se está no horário comercial (08:00-19:25h SP)"""
@@ -64,10 +107,18 @@ def is_business_hours() -> bool:
 
 async def run_once():
     """Executa uma vez o processamento do feed do BACEN"""
-    print(f"🕒 [{datetime.now().strftime('%H:%M:%S')}] Iniciando verificação de normativos...")
+    start_time = datetime.now()
+    print(f"🕒 [{start_time.strftime('%H:%M:%S')}] Iniciando verificação de normativos...")
+    
+    # Log de início
+    log_execution("started", {
+        "timestamp": start_time.isoformat(),
+        "business_hours": is_business_hours()
+    })
     
     if not is_business_hours():
         print("⏰ Fora do horário comercial (08:00-19:25h SP) — nada a processar.")
+        log_execution("skipped", {"reason": "outside_business_hours"})
         return
     
     s = get_settings()
@@ -77,6 +128,7 @@ async def run_once():
     health = store.health_check()
     if health['status'] != 'healthy':
         print(f"❌ Problema no banco de dados: {health.get('error', 'Erro desconhecido')}")
+        log_execution("error", {"reason": "database_unhealthy", "error": health.get('error')})
         return
     
     print(f"✅ Banco de dados saudável - {health['subscriber_count']} inscrito(s)")
@@ -84,6 +136,7 @@ async def run_once():
     subscribers = store.list_subscribers()
     if not subscribers:
         print("ℹ️ Nenhum inscrito — nada a enviar.")
+        log_execution("skipped", {"reason": "no_subscribers"})
         return
 
     print(f"🔍 Buscando normativos do BACEN...")
@@ -91,6 +144,7 @@ async def run_once():
     
     if not normativos:
         print("❌ Nenhum normativo encontrado no feed do BACEN")
+        log_execution("error", {"reason": "no_normativos_found"})
         return
     
     # Ordena por data de publicação (mais recente primeiro)
@@ -101,6 +155,7 @@ async def run_once():
 
     try:
         novos_normativos = 0
+        normativos_enviados = []
         
         for normativo in normativos[:s.MAX_ITEMS_PER_FEED]:
             # Usa o link como ID único para o normativo
@@ -130,12 +185,33 @@ async def run_once():
                     print(f"❌ Falha ao enviar para {chat_id}: {ex}")
             
             novos_normativos += 1
+            normativos_enviados.append({
+                "title": normativo.title,
+                "published": normativo.published.isoformat(),
+                "link": normativo.link
+            })
+        
+        end_time = datetime.now()
+        duration = (end_time - start_time).total_seconds()
         
         if novos_normativos > 0:
             print(f"📊 Total de novos normativos enviados: {novos_normativos}")
+            log_execution("success", {
+                "normativos_enviados": novos_normativos,
+                "subscribers_count": len(subscribers),
+                "duration_seconds": duration,
+                "normativos": normativos_enviados
+            })
         else:
             print("ℹ️ Nenhum normativo novo encontrado")
+            log_execution("no_new_items", {
+                "subscribers_count": len(subscribers),
+                "duration_seconds": duration
+            })
             
+    except Exception as e:
+        print(f"❌ Erro durante execução: {e}")
+        log_execution("error", {"reason": "execution_error", "error": str(e)})
     finally:
         await bot.session.close()
         print(f"🏁 Verificação concluída às {datetime.now().strftime('%H:%M:%S')}")

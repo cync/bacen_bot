@@ -35,11 +35,32 @@ class BACENReplyBot:
             "timestamp": datetime.now().isoformat()
         })
     
+    async def monitor_handler(self, request):
+        """Página de monitoramento do bacen-cron"""
+        try:
+            # Importa o gerador de monitoramento
+            import subprocess
+            import sys
+            
+            # Executa o script de monitoramento
+            result = subprocess.run([
+                sys.executable, "monitor.py"
+            ], capture_output=True, text=True, cwd=os.getcwd())
+            
+            if result.returncode == 0:
+                return web.Response(text=result.stdout, content_type='text/html; charset=utf-8')
+            else:
+                return web.Response(text=f"Erro ao gerar monitoramento: {result.stderr}", status=500)
+                
+        except Exception as e:
+            return web.Response(text=f"Erro: {str(e)}", status=500)
+    
     async def start_web_server(self):
         """Start a simple web server for health checks"""
         app = web.Application()
         app.router.add_get('/health', self.health_check_handler)
         app.router.add_get('/', self.health_check_handler)
+        app.router.add_get('/monitor', self.monitor_handler)
         
         runner = web.AppRunner(app)
         await runner.setup()
@@ -49,6 +70,7 @@ class BACENReplyBot:
         site = web.TCPSite(runner, '0.0.0.0', port)
         await site.start()
         print(f"🌐 Health check server running on port {port}")
+        print(f"📊 Monitoramento disponível em: http://localhost:{port}/monitor")
         
     async def start(self):
         """Start the reply bot service"""
