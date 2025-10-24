@@ -1,0 +1,51 @@
+[
+  {
+    "timestamp": "2025-10-24T14:04:26.685713-03:00",
+    "status": "started",
+    "details": {
+      "test": true,
+      "reason": "test_execution"
+    }
+  },
+  {
+    "timestamp": "2025-10-24T14:04:26.685906-03:00",
+    "status": "success",
+    "details": {
+      "normativos_enviados": 1,
+      "subscribers_count": 16,
+      "duration_seconds": 2.5,
+      "test": true
+    }
+  },
+  {
+    "timestamp": "2025-10-24T14:04:29.458328-03:00",
+    "status": "started",
+    "details": {
+      "timestamp": "2025-10-24T14:04:29.457922-03:00",
+      "business_hours": true,
+      "simulation": true
+    }
+  },
+  {
+    "timestamp": "2025-10-24T14:04:29.481464-03:00",
+    "status": "success",
+    "details": {
+      "normativos_enviados": 2,
+      "subscribers_count": 16,
+      "duration_seconds": 3.2,
+      "normativos": [
+        {
+          "title": "Resolução BCB N° 514",
+          "published": "2025-10-24T09:09:00",
+          "link": "https://example.com"
+        },
+        {
+          "title": "Resolução BCB N° 515",
+          "published": "2025-10-24T10:59:00",
+          "link": "https://example.com"
+        }
+      ],
+      "simulation": true
+    }
+  }
+]
