@@ -47,5 +47,13 @@
       ],
       "simulation": true
     }
+  },
+  {
+    "timestamp": "2025-10-24T14:36:02.929344-03:00",
+    "status": "started",
+    "details": {
+      "timestamp": "2025-10-24T14:36:02.927285-03:00",
+      "business_hours": true
+    }
   }
 ]

@@ -217,8 +217,21 @@ async def run_once():
         print(f"🏁 Verificação concluída às {datetime.now(BR_TZ).strftime('%H:%M:%S')}")
 
 async def run_cron():
-    """Executa o cron de 10 em 10 minutos durante horário comercial"""
-    print("🕒 Iniciando cron do sender (10 em 10 min, 08:00-19:25h SP)")
+    """Executa o cron de forma robusta (10 em 10 min, 08:00-19:25h SP)"""
+    print("🕒 Iniciando cron robusto do sender (10 em 10 min, 08:00-19:25h SP)")
+    
+    # Log de início do cron
+    try:
+        log_execution("cron_started", {
+            "timestamp": datetime.now(BR_TZ).isoformat(),
+            "business_hours": is_business_hours(),
+            "message": "Cron service started"
+        })
+    except:
+        pass
+    
+    consecutive_errors = 0
+    max_consecutive_errors = 5
     
     while True:
         try:
@@ -226,12 +239,45 @@ async def run_cron():
                 current_time = datetime.now(BR_TZ)
             else:
                 current_time = datetime.now(timezone.utc)
+            
             print(f"⏰ Executando cron em {current_time}")
+            print(f"🔄 Tentativa {consecutive_errors + 1} - Erros consecutivos: {consecutive_errors}")
+            
+            # Executa verificação
             await run_once()
+            
+            # Reset contador de erros em caso de sucesso
+            consecutive_errors = 0
+            
+            print(f"✅ Execução concluída com sucesso às {datetime.now(BR_TZ).strftime('%H:%M:%S')}")
+            
         except Exception as e:
-            print(f"❌ Erro no cron: {e}")
+            consecutive_errors += 1
+            print(f"❌ Erro no cron (tentativa {consecutive_errors}): {e}")
+            
+            # Log do erro
+            try:
+                log_execution("error", {
+                    "reason": "cron_execution_error",
+                    "error": str(e),
+                    "consecutive_errors": consecutive_errors
+                })
+            except:
+                pass
+            
+            # Se muitos erros consecutivos, aguarda mais tempo
+            if consecutive_errors >= max_consecutive_errors:
+                print(f"⚠️ Muitos erros consecutivos ({consecutive_errors}), aguardando 30 minutos...")
+                await asyncio.sleep(30 * 60)  # 30 minutos
+                consecutive_errors = 0
+            else:
+                # Aguarda tempo progressivo baseado no número de erros
+                wait_time = min(5 * consecutive_errors, 30) * 60  # 5, 10, 15, 20, 25, 30 min
+                print(f"⏳ Aguardando {wait_time//60} minutos antes da próxima tentativa...")
+                await asyncio.sleep(wait_time)
+                continue
         
-        # Aguarda 10 minutos
+        # Aguarda 10 minutos para próxima execução
         print("⏳ Aguardando 10 minutos...")
         await asyncio.sleep(10 * 60)  # 10 minutos
 
