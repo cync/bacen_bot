@@ -1,8 +1,7 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "builder": "NIXPACKS",
-    "buildCommand": "pip install -r requirements.txt"
+    "builder": "NIXPACKS"
   },
   "deploy": {
     "startCommand": "python main.py",
@@ -14,8 +13,7 @@
       "name": "bacen-reply-bot",
       "source": ".",
       "build": {
-        "builder": "NIXPACKS",
-        "buildCommand": "pip install -r requirements.txt"
+        "builder": "NIXPACKS"
       },
       "deploy": {
         "startCommand": "python main.py",
@@ -23,16 +21,14 @@
         "restartPolicyMaxRetries": 10
       },
       "variables": {
-        "PORT": "8000",
-        "PYTHON_VERSION": "3.11"
+        "PORT": "8000"
       }
     },
     {
       "name": "bacen-cron",
       "source": ".",
       "build": {
-        "builder": "NIXPACKS",
-        "buildCommand": "pip install -r requirements.txt"
+        "builder": "NIXPACKS"
       },
       "deploy": {
         "startCommand": "python cron.py",
@@ -40,8 +36,7 @@
         "restartPolicyMaxRetries": 10
       },
       "variables": {
-        "PORT": "8001",
-        "PYTHON_VERSION": "3.11"
+        "PORT": "8001"
       }
     }
   ]
