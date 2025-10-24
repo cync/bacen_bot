@@ -32,7 +32,7 @@ store = get_store()
 
 @dp.message(CommandStart())
 async def on_start(message: types.Message):
-    await message.answer("Olá! 👋\n\n<b>Comandos disponíveis:</b>\n• <b>oi</b> - Autorizar avisos automáticos\n• <b>/stop</b> - Cancelar avisos\n• <b>status</b> - Status do sistema\n• <b>ultimo</b> - Último normativo\n• <b>hoje</b> - Normativos de hoje\n• <b>ontem</b> - Normativos de ontem\n• <b>semanal</b> - Normativos desta semana")
+    await message.answer("Olá! 👋\n\n<b>Comandos disponíveis:</b>\n• <b>oi</b> - Autorizar avisos automáticos\n• <b>/stop</b> - Cancelar avisos\n• <b>status</b> - Status do sistema\n• <b>forcar</b> - Forçar verificação\n• <b>ultimo</b> - Último normativo\n• <b>hoje</b> - Normativos de hoje\n• <b>ontem</b> - Normativos de ontem\n• <b>semanal</b> - Normativos desta semana")
 
 @dp.message(Command("stop"))
 async def on_stop(message: types.Message):
@@ -99,46 +99,26 @@ async def on_ontem(message: types.Message):
     except Exception as e:
         await message.answer(f"❌ Erro ao buscar normativos de ontem: {str(e)}")
 
-@dp.message(F.text.lower() == "status")
-async def on_status(message: types.Message):
-    """Mostra o status do sistema e inscrições"""
+@dp.message(F.text.lower() == "forcar")
+async def on_forcar(message: types.Message):
+    """Força o envio de notificações pendentes (comando de emergência)"""
     try:
-        await message.answer("🔍 Verificando status do sistema...")
+        await message.answer("🔄 Forçando verificação de normativos pendentes...")
         
-        # Verifica saúde do banco
-        health = store.health_check()
+        # Importa e executa o sistema de notificações
+        from sender import run_once
         
-        if health['status'] == 'healthy':
-            subscriber_count = health['subscriber_count']
-            seen_items_count = health['seen_items_count']
-            
-            # Verifica se o usuário está inscrito
-            user_info = store.get_subscriber_info(message.chat.id)
-            
-            status_msg = f"📊 <b>Status do Sistema BACEN Bot</b>\n\n"
-            status_msg += f"✅ <b>Banco de dados:</b> Saudável\n"
-            status_msg += f"👥 <b>Total de inscritos:</b> {subscriber_count}\n"
-            status_msg += f"📄 <b>Normativos processados:</b> {seen_items_count}\n\n"
-            
-            if user_info:
-                joined_date = user_info['joined_at'].strftime("%d/%m/%Y %H:%M")
-                status_msg += f"✅ <b>Seu status:</b> Inscrito\n"
-                status_msg += f"📅 <b>Inscrito desde:</b> {joined_date}\n"
-                status_msg += f"🔔 <b>Notificações:</b> Ativas"
-            else:
-                status_msg += f"❌ <b>Seu status:</b> Não inscrito\n"
-                status_msg += f"💡 <b>Para receber notificações:</b> Envie 'oi'"
-            
-            await message.answer(status_msg)
-        else:
-            await message.answer(f"❌ Problema no sistema: {health.get('error', 'Erro desconhecido')}")
-            
+        # Executa uma verificação manual
+        await run_once()
+        
+        await message.answer("✅ Verificação forçada concluída!\nSe houver normativos novos, você receberá notificações.")
+        
     except Exception as e:
-        await message.answer(f"❌ Erro ao verificar status: {str(e)}")
+        await message.answer(f"❌ Erro ao forçar verificação: {str(e)}")
 
 @dp.message()
 async def fallback(message: types.Message):
-    await message.answer("Não entendi 🤖 — Comandos disponíveis:\n• <b>oi</b> - Autorizar avisos\n• <b>/stop</b> - Cancelar avisos\n• <b>status</b> - Status do sistema\n• <b>ultimo</b> - Último normativo\n• <b>hoje</b> - Normativos de hoje\n• <b>ontem</b> - Normativos de ontem\n• <b>semanal</b> - Normativos desta semana")
+    await message.answer("Não entendi 🤖 — Comandos disponíveis:\n• <b>oi</b> - Autorizar avisos\n• <b>/stop</b> - Cancelar avisos\n• <b>status</b> - Status do sistema\n• <b>forcar</b> - Forçar verificação\n• <b>ultimo</b> - Último normativo\n• <b>hoje</b> - Normativos de hoje\n• <b>ontem</b> - Normativos de ontem\n• <b>semanal</b> - Normativos desta semana")
 
 async def main():
     print("reply_bot: ouvindo mensagens...")
