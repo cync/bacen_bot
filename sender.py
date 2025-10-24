@@ -53,7 +53,7 @@ def log_execution(status: str, details: dict = None):
         
         # Adiciona novo log
         log_entry = {
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(BR_TZ).isoformat(),
             "status": status,
             "details": details or {}
         }
@@ -107,7 +107,7 @@ def is_business_hours() -> bool:
 
 async def run_once():
     """Executa uma vez o processamento do feed do BACEN"""
-    start_time = datetime.now()
+    start_time = datetime.now(BR_TZ)
     print(f"🕒 [{start_time.strftime('%H:%M:%S')}] Iniciando verificação de normativos...")
     
     # Log de início
@@ -191,7 +191,7 @@ async def run_once():
                 "link": normativo.link
             })
         
-        end_time = datetime.now()
+        end_time = datetime.now(BR_TZ)
         duration = (end_time - start_time).total_seconds()
         
         if novos_normativos > 0:
@@ -214,7 +214,7 @@ async def run_once():
         log_execution("error", {"reason": "execution_error", "error": str(e)})
     finally:
         await bot.session.close()
-        print(f"🏁 Verificação concluída às {datetime.now().strftime('%H:%M:%S')}")
+        print(f"🏁 Verificação concluída às {datetime.now(BR_TZ).strftime('%H:%M:%S')}")
 
 async def run_cron():
     """Executa o cron de 10 em 10 minutos durante horário comercial"""

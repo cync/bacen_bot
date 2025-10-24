@@ -10,12 +10,16 @@ import sys
 from datetime import datetime
 from dotenv import load_dotenv
 from aiohttp import web
+import pytz
 
 # Load environment variables
 load_dotenv()
 
 # Import sender module
 from sender import run_cron
+
+# Configuração do fuso horário brasileiro
+BR_TZ = pytz.timezone('America/Sao_Paulo')
 
 class BACENCronService:
     def __init__(self):
@@ -31,7 +35,7 @@ class BACENCronService:
         return web.json_response({
             "status": "healthy",
             "service": "bacen-cron",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now(BR_TZ).isoformat()
         })
     
     async def start_web_server(self):
@@ -52,7 +56,7 @@ class BACENCronService:
     async def start(self):
         """Start the cron service"""
         print("🚀 Starting BACEN Cron Service on Railway...")
-        print(f"📅 Started at: {datetime.now()}")
+        print(f"📅 Started at: {datetime.now(BR_TZ)}")
         
         # Set up signal handlers
         signal.signal(signal.SIGINT, self.signal_handler)

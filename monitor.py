@@ -7,6 +7,7 @@ import sys
 from datetime import datetime, timezone
 from dotenv import load_dotenv
 import json
+import pytz
 
 # Load environment variables
 load_dotenv()
@@ -18,12 +19,19 @@ from sender import get_execution_logs, is_business_hours
 from storage import get_store
 from bacen_feed import get_normativos_hoje
 
+# Configuração do fuso horário brasileiro
+BR_TZ = pytz.timezone('America/Sao_Paulo')
+
+def get_brazil_time():
+    """Retorna o horário atual do Brasil"""
+    return datetime.now(BR_TZ)
+
 def generate_monitoring_page():
     """Gera a página HTML de monitoramento"""
     
     # Coleta dados
     logs = get_execution_logs()
-    current_time = datetime.now()
+    current_time = get_brazil_time()
     business_hours_active = is_business_hours()
     
     # Estatísticas
@@ -276,7 +284,9 @@ def generate_logs_html(logs):
     html_logs = []
     for log in recent_logs:
         timestamp = datetime.fromisoformat(log['timestamp'].replace('Z', '+00:00'))
-        time_str = timestamp.strftime('%d/%m/%Y %H:%M:%S')
+        # Converte para horário brasileiro
+        timestamp_br = timestamp.astimezone(BR_TZ)
+        time_str = timestamp_br.strftime('%d/%m/%Y %H:%M:%S')
         
         status = log.get('status', 'unknown')
         details = log.get('details', {})

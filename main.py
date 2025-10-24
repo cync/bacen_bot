@@ -11,12 +11,16 @@ from datetime import datetime
 from dotenv import load_dotenv
 from aiohttp import web
 import threading
+import pytz
 
 # Load environment variables
 load_dotenv()
 
 # Import bot modules
 from reply_bot import main as reply_bot_main
+
+# Configuração do fuso horário brasileiro
+BR_TZ = pytz.timezone('America/Sao_Paulo')
 
 class BACENReplyBot:
     def __init__(self):
@@ -32,7 +36,7 @@ class BACENReplyBot:
         return web.json_response({
             "status": "healthy",
             "service": "bacen-reply-bot",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now(BR_TZ).isoformat()
         })
     
     async def monitor_handler(self, request):
@@ -75,7 +79,7 @@ class BACENReplyBot:
     async def start(self):
         """Start the reply bot service"""
         print("🚀 Starting BACEN Reply Bot on Railway...")
-        print(f"📅 Started at: {datetime.now()}")
+        print(f"📅 Started at: {datetime.now(BR_TZ)}")
         
         # Set up signal handlers
         signal.signal(signal.SIGINT, self.signal_handler)
