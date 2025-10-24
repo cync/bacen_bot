@@ -315,6 +315,4 @@ def generate_logs_html(logs):
 
 if __name__ == "__main__":
     html_content = generate_monitoring_page()
-    print("Content-Type: text/html; charset=utf-8")
-    print()
     print(html_content)

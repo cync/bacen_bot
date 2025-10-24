@@ -48,7 +48,7 @@ class BACENReplyBot:
             ], capture_output=True, text=True, cwd=os.getcwd())
             
             if result.returncode == 0:
-                return web.Response(text=result.stdout, content_type='text/html; charset=utf-8')
+                return web.Response(text=result.stdout, content_type='text/html')
             else:
                 return web.Response(text=f"Erro ao gerar monitoramento: {result.stderr}", status=500)
                 
