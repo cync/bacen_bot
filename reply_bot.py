@@ -32,7 +32,7 @@ store = get_store()
 
 @dp.message(CommandStart())
 async def on_start(message: types.Message):
-    await message.answer("Olá! 👋\n\n<b>Comandos disponíveis:</b>\n• <b>oi</b> - Autorizar avisos automáticos\n• <b>/stop</b> - Cancelar avisos\n• <b>status</b> - Status do sistema\n• <b>forcar</b> - Forçar verificação\n• <b>ultimo</b> - Último normativo\n• <b>hoje</b> - Normativos de hoje\n• <b>ontem</b> - Normativos de ontem\n• <b>semanal</b> - Normativos desta semana")
+    await message.answer("Olá! 👋\n\n<b>Comandos disponíveis:</b>\n• <b>oi</b> - Autorizar avisos automáticos\n• <b>/stop</b> - Cancelar avisos\n• <b>status</b> - Status do sistema\n• <b>testar</b> - Testar notificações\n• <b>forcar</b> - Forçar verificação\n• <b>ultimo</b> - Último normativo\n• <b>hoje</b> - Normativos de hoje\n• <b>ontem</b> - Normativos de ontem\n• <b>semanal</b> - Normativos desta semana")
 
 @dp.message(Command("stop"))
 async def on_stop(message: types.Message):
@@ -99,26 +99,31 @@ async def on_ontem(message: types.Message):
     except Exception as e:
         await message.answer(f"❌ Erro ao buscar normativos de ontem: {str(e)}")
 
-@dp.message(F.text.lower() == "forcar")
-async def on_forcar(message: types.Message):
-    """Força o envio de notificações pendentes (comando de emergência)"""
+@dp.message(F.text.lower() == "testar")
+async def on_testar(message: types.Message):
+    """Testa o sistema de notificações automáticas"""
     try:
-        await message.answer("🔄 Forçando verificação de normativos pendentes...")
+        await message.answer("🧪 Testando sistema de notificações...")
         
         # Importa e executa o sistema de notificações
-        from sender import run_once
+        from sender import run_once, is_business_hours
         
-        # Executa uma verificação manual
+        # Verifica horário
+        if not is_business_hours():
+            await message.answer("⏰ Sistema fora do horário comercial (08:00-19:25 SP)")
+            return
+        
+        # Executa verificação
         await run_once()
         
-        await message.answer("✅ Verificação forçada concluída!\nSe houver normativos novos, você receberá notificações.")
+        await message.answer("✅ Teste concluído!\nSe houver normativos novos, você receberá notificações.")
         
     except Exception as e:
-        await message.answer(f"❌ Erro ao forçar verificação: {str(e)}")
+        await message.answer(f"❌ Erro no teste: {str(e)}")
 
 @dp.message()
 async def fallback(message: types.Message):
-    await message.answer("Não entendi 🤖 — Comandos disponíveis:\n• <b>oi</b> - Autorizar avisos\n• <b>/stop</b> - Cancelar avisos\n• <b>status</b> - Status do sistema\n• <b>forcar</b> - Forçar verificação\n• <b>ultimo</b> - Último normativo\n• <b>hoje</b> - Normativos de hoje\n• <b>ontem</b> - Normativos de ontem\n• <b>semanal</b> - Normativos desta semana")
+    await message.answer("Não entendi 🤖 — Comandos disponíveis:\n• <b>oi</b> - Autorizar avisos\n• <b>/stop</b> - Cancelar avisos\n• <b>status</b> - Status do sistema\n• <b>testar</b> - Testar notificações\n• <b>forcar</b> - Forçar verificação\n• <b>ultimo</b> - Último normativo\n• <b>hoje</b> - Normativos de hoje\n• <b>ontem</b> - Normativos de ontem\n• <b>semanal</b> - Normativos desta semana")
 
 async def main():
     print("reply_bot: ouvindo mensagens...")
